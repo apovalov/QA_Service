@@ -1,1 +1,1 @@
-from .query_data import get_response
+from .query_data import QueryData
