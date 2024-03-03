@@ -5,6 +5,8 @@ FROM python:3.9-slim
 #WORKDIR /usr/src/app
 WORKDIR /app
 
+ENV CHROMA_PATH="./app/data/chroma"
+ENV LOG_FILE="./app/data/logs/query_logs.txt"
 
 # Обновление списка пакетов и установка curl
 RUN apt-get update && apt-get install -y curl
@@ -27,5 +29,5 @@ EXPOSE 8000
 # Note: It's generally not a good practice to run scripts with arguments directly in the Dockerfile,
 # because it makes the container less flexible. Instead, you should pass the argument at runtime.
 # Run inference_service.py when the container launches
-CMD ["uvicorn", "src.inference_service:app", "--host", "0.0.0.0", "--port", "5000"]
+CMD ["uvicorn", "src.services.inference_service:app", "--host", "0.0.0.0", "--port", "8000"]
 #CMD ["uvicorn", "src.inference_service:app", "--port", "8000"]
