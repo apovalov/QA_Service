@@ -4,24 +4,33 @@ from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from dotenv import load_dotenv, find_dotenv
 import os
-
-load_dotenv(find_dotenv())
-
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-CHROMA_PATH = os.getenv("CHROMA_PATH")
-
-PROMPT_TEMPLATE = """
-Answer the question based only on the following context:
-
-{context}
-
----
-
-Answer the question based on the above context: {question}
-"""
+from fastapi import HTTPException
+import logging
+import time
+# import tiktoken
 
 class QueryData:
     def __init__(self):
+
+        load_dotenv(find_dotenv())
+
+        OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+        # CHROMA_PATH = os.getenv("CHROMA_PATH")
+        app_folder = os.getenv("APP_FOLDER", "")
+
+        # Путь к файлу лога
+        CHROMA_PATH = os.path.join(app_folder, './data/chroma')
+
+        PROMPT_TEMPLATE = """
+        Answer the question based only on the following context:
+
+        {context}
+
+        ---
+
+        Answer the question based on the above context: {question}
+        """
+
         self.open_ai_key = OPENAI_API_KEY
         self.chroma_path = CHROMA_PATH
         self.prompt_template = PROMPT_TEMPLATE
@@ -38,26 +47,53 @@ class QueryData:
         if not self.db:
             self.db = await self.prepare_db()
 
+        start_time = time.perf_counter()
         results = self.db.similarity_search_with_relevance_scores(query_text, k=3)
-        print('3.Results', results)
+        end_time = time.perf_counter()
+
+        logging.info('Similarity search time: %.2f seconds', round(end_time - start_time, 2))
+        logging.info('Similarity scores: %s', [round(score, 2) for _, score in results])
+
+        results = self.db.similarity_search_with_relevance_scores(query_text, k=3)
+
+        logging.info('Results: %s', results)
+
         if not results or results[0][1] < 0.7:
-            raise Exception(status_code=404, detail="Matching results not found")
+            raise HTTPException(status_code=404, detail="Matching results not found")
             return
 
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
         prompt_template = ChatPromptTemplate.from_template(self.prompt_template)
         prompt = prompt_template.format(context=context_text, question=query_text)
+
+        # request_tokens = tiktoken.count_tokens(prompt)
+        # logging.info('Number of tokens in request: %d', request_tokens)
+
         return prompt
 
     async def get_from_llm(self, prompt: str) -> str:
+        start_time = time.perf_counter()
         model = ChatOpenAI(openai_api_key=self.open_ai_key, model="gpt-3.5-turbo")
         response_text = model.invoke(prompt)
+        end_time = time.perf_counter()
+
+        logging.info('OpenAI response time: %.2f seconds', round(end_time - start_time, 2))
         return response_text
 
-
-
     async def get_response(self, query_text: str) -> str:
+        prompt_start_time = time.perf_counter()
         prompt = await self.prepare_prompt(query_text)
-        response_text = await self.get_from_llm(prompt)
-        formatted_response = f"Prompt: {prompt}\nResponse: {response_text} \n"
+        # prompt_end_time = time.perf_counter()
+
+        response = await self.get_from_llm(prompt)
+        response_end_time = time.perf_counter()
+
+        logging.info('Total request time: %.2f seconds', round(response_end_time - prompt_start_time, 2))
+        logging.info('Question: %s', query_text)
+        logging.info('Response: %s', response)
+
+        # response_tokens = tiktoken.count_tokens(response)
+        # logging.info('Number of tokens in response: %d', response_tokens)
+
+        formatted_response = f"Prompt: {prompt}\nResponse: {response} \n"
         return formatted_response

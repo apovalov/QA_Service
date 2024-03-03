@@ -9,12 +9,21 @@ from dotenv import load_dotenv, find_dotenv
 import os
 
 
-CHROMA_PATH = "./data/chroma"
-DATA_PATH = "./data/documents"
+# CHROMA_PATH = "./data/chroma"
+# DATA_PATH = "./data/documents"
 
 load_dotenv(find_dotenv())
 open_ai_key = os.getenv("OPENAI_API_KEY")
 
+
+
+# Загружаем переменные окружения
+# load_dotenv(find_dotenv())
+app_folder = os.getenv("APP_FOLDER", "")
+
+# Путь к файлу лога
+CHROMA_PATH = os.path.join(app_folder, './data/chroma')
+DATA_PATH = os.path.join(app_folder, './data/documents')
 
 def main():
     generate_data_store()

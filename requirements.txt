@@ -4,3 +4,4 @@ langchain_openai
 chromadb # Vector storage
 fastapi
 uvicorn
+tiktoken
