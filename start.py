@@ -1,5 +1,5 @@
 from src.services import UvicornService
-from src.logging.log_config import log_init
+from src.logging import Logger
 
 def run_uvicorn_service():
     service = UvicornService()
@@ -9,7 +9,7 @@ def run_other_service():
     pass
 
 def main():
-    log_init()
+    _ = Logger()
 
     run_uvicorn_service()
     # run_other_service()
