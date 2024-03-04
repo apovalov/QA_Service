@@ -14,3 +14,18 @@ def log_init():
                         format='%(asctime)s - %(levelname)s - %(message)s',
                         filename=log_file_path)
 
+    handler = logging.StreamHandler()
+
+    # Устанавливаем уровень логирования обработчика (в данном случае INFO, чтобы выводить все сообщения уровня INFO и выше)
+    handler.setLevel(logging.INFO)
+
+    # Получаем корневой логгер (он используется по умолчанию, если не указан другой логгер)
+    logger = logging.getLogger()
+
+    # Добавляем обработчик к логгеру
+    logger.addHandler(handler)
+
+    # Устанавливаем уровень логирования для логгера (в данном случае INFO, чтобы выводить все сообщения уровня INFO и выше)
+    # logger.setLevel(logging.INFO)
+
+
