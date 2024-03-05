@@ -1,0 +1,55 @@
+version: '3.8'
+services:
+    db:
+        container_name: pg_container
+        image: postgres
+        restart: always
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_DB: ${POSTGRES_DB}
+            PGDATA: /data/postgres
+        volumes:
+            - postgres:/data/postgres
+        ports:
+            - "5432:5432"
+        networks:
+            - postgres
+
+    pgadmin:
+        container_name: pgadmin
+        image: dpage/pgadmin4
+        restart: always
+        environment:
+            PGADMIN_DEFAULT_EMAIL: admin@admin.com
+            PGADMIN_DEFAULT_PASSWORD: root
+        volumes:
+            - my-data:/var/lib/pgadmin
+        ports:
+            - "5050:80"
+        networks:
+            - postgres
+
+    assist_service:
+        container_name: assist_service
+        build: .
+        ports:
+            - "8000:8000"
+        environment:
+            OPENAI_API_KEY: ${OPENAI_API_KEY}
+            DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+        volumes:
+            - assist_data:/var/lib/assist_data
+        networks:
+            - postgres
+
+volumes:
+    postgres:
+    my-data:
+    assist_data:
+
+networks:
+    postgres:
+        driver: bridge
+    # minio_app:
+    #     driver: bridge

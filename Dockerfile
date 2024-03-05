@@ -9,11 +9,16 @@ WORKDIR /app
 ENV APP_FOLDER="./app"
 
 # Обновление списка пакетов и установка curl
-RUN apt-get update && apt-get install -y curl
+RUN apt-get update && apt-get install -y curl \
+    libpq-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
 
 # Copy the Python dependencies file into the container at /usr/src/app
 COPY requirements.txt ./
 RUN python -m pip install --upgrade pip && pip install -r requirements.txt
+
 
 
 # Copy the rest of your application's source code from your host to your image filesystem.

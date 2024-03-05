@@ -10,7 +10,7 @@ import logging
 import time
 from tiktoken import encoding_for_model
 from src.logging import Logger
-import hashlib
+# import hashlib
 # import tiktoken
 
 class QueryData:
@@ -48,28 +48,9 @@ class QueryData:
         if not self.db:
             self.db = await self.prepare_db()
 
-        # start_time = time.perf_counter()
         results = self.db.similarity_search_with_relevance_scores(query_text, k=3)
-        # end_time = time.perf_counter()
-
-        # Логирование времени поиска похожих документов
-        # logging.info('\nSimilarity search time: %.2f seconds', round(end_time - start_time, 2))
-
-        # Логирование результатов поиска
-        # logging.info('\nSimilarity scores: %s', [round(score, 2) for _, score in results])
-        # for i, (doc, _score) in enumerate(results):
-        #     logging.info('*********************\n*** Document %d [%.2f]: ***', i, round(_score, 2))
-        #     logging.info('%s...%s',
-        #                  doc.page_content[:50],
-        #                  doc.page_content[-50:])
-
-
-        # if not results or results[0][1] < 0.7:
-        #     raise HTTPException(status_code=404, detail="Matching results not found")
-        #     return
 
         Logger.log_search_results(results)
-
 
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
         prompt_template = ChatPromptTemplate.from_template(self.prompt_template)
@@ -78,7 +59,6 @@ class QueryData:
         return prompt, results
 
     async def get_from_llm(self, prompt: str) -> str:
-        # start_time = time.perf_counter()
         model_name = "gpt-3.5-turbo"
         model = ChatOpenAI(openai_api_key=self.open_ai_key, model=model_name)
         response = model.invoke(prompt)
@@ -87,7 +67,6 @@ class QueryData:
         encoding = encoding_for_model(model_name)
         prompt_tokens = len(encoding.encode(prompt))
         response_tokens = len(encoding.encode(response_text))
-        # end_time = time.perf_counter()
 
         logging.info('Tokens spent: %d [%d, %d]', prompt_tokens+response_tokens, prompt_tokens, response_tokens)
         return response_text
@@ -99,23 +78,8 @@ class QueryData:
         response_text = await self.get_from_llm(prompt)
         response_end_time = time.perf_counter()
 
-        # # Логирование времени выполнения
-        # logging.info('------- // -------')
-        # logging.info('Promt preparation time: %.2f seconds', round(prompt_end_time - prompt_start_time, 2))
-        # logging.info('OpenAI response time: %.2f seconds', round(response_end_time - prompt_end_time, 2))
-        # logging.info('Total request time: %.2f seconds', round(response_end_time - prompt_start_time, 2))
-        # # Логирование запроса и ответа
-        # logging.info('------- // -------')
-        # # logging.info('-------')
-        # logging.info('Question: %s [%s]', query_text, (hashlib.sha256(query_text.encode()).hexdigest())[:6])
-        # logging.info('Response: %s', response_text)
-        # logging.info('------- // -------')
-        # logging.info('------- // -------')
-
         Logger.log_query_info(query_text, prompt_start_time, prompt_end_time, response_end_time, response_text)
 
-
-        # response_text = response.get_content() if hasattr(response, 'get_content') else str(response)
         formatted_response = f"Prompt: {prompt}\nResponse: {response_text} \n"
         return formatted_response
 
