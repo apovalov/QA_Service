@@ -29,7 +29,7 @@ COPY data/chroma app/data/chroma
 COPY data/logs app/data/logs
 
 # Inform Docker that the container is listening on the specified port at runtime.
-EXPOSE 8000
+EXPOSE 7000
 
 # Run query_data.py when the container launches
 
