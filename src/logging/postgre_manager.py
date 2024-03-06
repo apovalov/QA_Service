@@ -16,7 +16,7 @@ class DatabaseManager:
         """ Создает подключение к базе данных """
         try:
             conn = psycopg2.connect(DATABASE_URL)
-            print("К базе подклчились")
+            print("К базе подключились")
             return conn
         except psycopg2.DatabaseError as e:
             print(f"Ошибка подключения к базе данных: {e}")
@@ -27,13 +27,15 @@ class DatabaseManager:
         create_table_query = """
             CREATE TABLE IF NOT EXISTS query_logs (
                 id SERIAL PRIMARY KEY,
+                created_at TIMESTAMP(0) DEFAULT CURRENT_TIMESTAMP,
+                total_time FLOAT,
+                token_spents INT,
                 query_text TEXT,
-                query_hash TEXT,
+                response_text TEXT,
+                promt TEXT,
                 prompt_time FLOAT,
                 response_time FLOAT,
-                total_time FLOAT,
-                response_text TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                query_hash TEXT
             )
         """
         cursor = self.conn.cursor()
@@ -42,14 +44,14 @@ class DatabaseManager:
         print('Таблица создана')
         cursor.close()
 
-    def insert_log(self, query_text, query_hash, prompt_time, response_time, total_time, response_text):
+    def insert_log(self, query_text, query_hash, prompt_time, response_time, total_time, response_text, token_spents, promt):
         """ Вставляет запись лога в таблицу """
         insert_query = """
-            INSERT INTO query_logs (query_text, query_hash, prompt_time, response_time, total_time, response_text)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO query_logs (query_text, query_hash, prompt_time, response_time, total_time, response_text, token_spents, promt)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
         cursor = self.conn.cursor()
-        cursor.execute(insert_query, (query_text, query_hash, prompt_time, response_time, total_time, response_text))
+        cursor.execute(insert_query, (query_text, query_hash, prompt_time, response_time, total_time, response_text, token_spents, promt))
         self.conn.commit()
         cursor.close()
 
@@ -58,8 +60,8 @@ class DatabaseManager:
         if self.conn is not None:
             self.conn.close()
 
-# # Использование класса DatabaseManager
+# Использование класса DatabaseManager
 # db_manager = DatabaseManager()
 # db_manager.create_table()
-# # Пример добавления записи в лог
-# db_manager.insert_log("Пример запроса", "hash", 0.1, 0.2, 0.3, "Ответ")
+# Пример добавления записи в лог
+# db_manager.insert_log("Пример запроса", "hash", 0.1, 0.2, 0.3, "Ответ", 123, "Пример prompt")

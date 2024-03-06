@@ -9,16 +9,8 @@ from dotenv import load_dotenv, find_dotenv
 import os
 
 
-# CHROMA_PATH = "./data/chroma"
-# DATA_PATH = "./data/documents"
-
 load_dotenv(find_dotenv())
 open_ai_key = os.getenv("OPENAI_API_KEY")
-
-
-
-# Загружаем переменные окружения
-# load_dotenv(find_dotenv())
 app_folder = os.getenv("APP_FOLDER", "")
 
 # Путь к файлу лога
@@ -64,8 +56,6 @@ def save_to_chroma(chunks: list[Document]):
         shutil.rmtree(CHROMA_PATH)
 
     # Create a new DB from the documents.
-    print(1111)
-    print(open_ai_key)
     db = Chroma.from_documents(
         chunks,
         OpenAIEmbeddings(model="text-embedding-ada-002", openai_api_key=open_ai_key),

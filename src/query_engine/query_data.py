@@ -5,22 +5,20 @@ from langchain.prompts import ChatPromptTemplate
 from dotenv import load_dotenv, find_dotenv
 import os
 from typing import Tuple, List
-from fastapi import HTTPException
-import logging
 import time
-from tiktoken import encoding_for_model
 from src.logging import Logger
-# import hashlib
-# import tiktoken
+from tiktoken import encoding_for_model
+
+
+load_dotenv(find_dotenv())
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+APP_FOLDER = os.getenv("APP_FOLDER", "")
+MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
+CHROMA_PATH = os.path.join(APP_FOLDER, './data/chroma')
 
 class QueryData:
     def __init__(self):
-
-        load_dotenv(find_dotenv())
-
-        OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-        app_folder = os.getenv("APP_FOLDER", "")
-        CHROMA_PATH = os.path.join(app_folder, './data/chroma')
 
         PROMPT_TEMPLATE = """
         Answer the question based only on the following context:
@@ -50,8 +48,6 @@ class QueryData:
 
         results = self.db.similarity_search_with_relevance_scores(query_text, k=3)
 
-        Logger.log_search_results(results)
-
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
         prompt_template = ChatPromptTemplate.from_template(self.prompt_template)
         prompt = prompt_template.format(context=context_text, question=query_text)
@@ -59,27 +55,47 @@ class QueryData:
         return prompt, results
 
     async def get_from_llm(self, prompt: str) -> str:
-        model_name = "gpt-3.5-turbo"
-        model = ChatOpenAI(openai_api_key=self.open_ai_key, model=model_name)
+        model = ChatOpenAI(openai_api_key=self.open_ai_key, model=MODEL_NAME)
         response = model.invoke(prompt)
         response_text = response.content
 
-        encoding = encoding_for_model(model_name)
-        prompt_tokens = len(encoding.encode(prompt))
-        response_tokens = len(encoding.encode(response_text))
-
-        logging.info('Tokens spent: %d [%d, %d]', prompt_tokens+response_tokens, prompt_tokens, response_tokens)
         return response_text
 
-    async def get_response(self, query_text: str) -> str:
+    async def get_response(self, query_text: str) -> dict:
         prompt_start_time = time.perf_counter()
-        prompt, results = await self.prepare_prompt(query_text)
+        prompt, _ = await self.prepare_prompt(query_text)
         prompt_end_time = time.perf_counter()
         response_text = await self.get_from_llm(prompt)
         response_end_time = time.perf_counter()
 
-        Logger.log_query_info(query_text, prompt_start_time, prompt_end_time, response_end_time, response_text)
+        prompt_duration = round(prompt_end_time - prompt_start_time, 2)
+        response_duration = round(response_end_time - prompt_end_time, 2)
+        total_duration = round(response_end_time - prompt_start_time, 2)
 
-        formatted_response = f"Prompt: {prompt}\nResponse: {response_text} \n"
-        return formatted_response
+        # Вычисляем количество затраченных токенов
+        encoding = encoding_for_model(MODEL_NAME)
+        prompt_tokens = len(encoding.encode(prompt))
+        response_tokens = len(encoding.encode(response_text))
+        token_spents = prompt_tokens + response_tokens
+        formatted_spents = '%d [%d, %d]' % (token_spents, prompt_tokens, response_tokens)
+
+        response_data = {
+            "query_text": query_text,
+            "response_text": response_text,
+            "total_time": total_duration,
+            "token_spents": formatted_spents,
+            "prompt": prompt,
+            "prompt_time": prompt_duration,
+            "llm_time": response_duration
+        }
+
+        Logger.log_query_info(query_text, prompt,
+                              prompt_duration,
+                              response_duration,
+                              total_duration,
+                              response_text,
+                              prompt_tokens,
+                              response_tokens)
+
+        return response_data
 

@@ -4,15 +4,15 @@ import os
 from dotenv import load_dotenv, find_dotenv
 from .postgre_manager import DatabaseManager
 
+load_dotenv(find_dotenv())
+APP_FOLDER = os.getenv("APP_FOLDER", "")
+MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
 
 class Logger:
     def __init__(self):
         # Загружаем переменные окружения
-        load_dotenv(find_dotenv())
-        app_folder = os.getenv("APP_FOLDER", "")  # Значение по умолчанию - пустая строка, если переменная не найдена
 
-        # Путь к файлу лога
-        log_file_path = os.path.join(app_folder, 'data/logs/raw_logs.log')
+        log_file_path = os.path.join(APP_FOLDER, 'data/logs/raw_logs.log')
         self.init_logger(log_file_path)
 
     def init_logger(self, log_file_path):
@@ -32,29 +32,36 @@ class Logger:
 
 
     @staticmethod
-    def log_query_info(query_text: str, prompt_start_time: float, prompt_end_time: float, response_end_time: float, response_text: str):
+    def log_query_info(query_text: str,
+                    prompt: str,
+                    prompt_duration: float,
+                    response_duration: float,
+                    total_duration: float,
+                    response_text: str,
+                    prompt_tokens: int,
+                    response_tokens: int):
         query_hash = hashlib.sha256(query_text.encode()).hexdigest()[:6]
 
-        db = DatabaseManager()
-        db.insert_log(query_text, query_hash, prompt_end_time - prompt_start_time, response_end_time - prompt_end_time, response_end_time - prompt_start_time, response_text)
 
         logging.info('------- // -------')
-        logging.info('Promt preparation time: %.2f seconds', round(prompt_end_time - prompt_start_time, 2))
-        logging.info('OpenAI response time: %.2f seconds', round(response_end_time - prompt_end_time, 2))
-        logging.info('Total request time: %.2f seconds', round(response_end_time - prompt_start_time, 2))
+        logging.info('Prompt preparation time: %.2f seconds', prompt_duration)
+        logging.info('OpenAI response time: %.2f seconds', response_duration)
+        logging.info('Total request time: %.2f seconds', total_duration)
+        logging.info('------- // -------')
+        logging.info('Prompt: %s', prompt)
         logging.info('------- // -------')
         logging.info('Question: %s [%s]', query_text, query_hash)
         logging.info('Response: %s', response_text)
         logging.info('------- // -------')
         logging.info('------- // -------')
 
-    @staticmethod
-    def log_search_results(results):
-        logging.info('\nSimilarity scores: %s', [round(score, 2) for _, score in results])
-        for i, (doc, _score) in enumerate(results):
-            logging.info('*********************\n*** Document %d [%.2f]: ***', i, round(_score, 2))
-            logging.info('%s...%s', doc.page_content[:50], doc.page_content[-50:])
-            logging.info('*********************')
+        token_spents = prompt_tokens + response_tokens
+
+        logging.info('Tokens spent: %d [%d, %d]', token_spents, prompt_tokens, response_tokens)
+
+        # Инициализируем DatabaseManager и вставляем лог
+        db = DatabaseManager()
+        db.insert_log(query_text, query_hash, prompt_duration, response_duration, total_duration, response_text, token_spents, prompt)
 
 # Пример использования
 # logger = Logger()
