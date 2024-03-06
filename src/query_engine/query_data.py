@@ -63,7 +63,7 @@ class QueryData:
 
     async def get_response(self, query_text: str) -> dict:
         prompt_start_time = time.perf_counter()
-        prompt, _ = await self.prepare_prompt(query_text)
+        prompt, results = await self.prepare_prompt(query_text)
         prompt_end_time = time.perf_counter()
         response_text = await self.get_from_llm(prompt)
         response_end_time = time.perf_counter()
@@ -79,12 +79,19 @@ class QueryData:
         token_spents = prompt_tokens + response_tokens
         formatted_spents = '%d [%d, %d]' % (token_spents, prompt_tokens, response_tokens)
 
+        scores_str_list = [str(round(score, 2)) for _, score in results]
+        scores_str = ", ".join(scores_str_list)
+
+        hints = [{"document": doc.page_content, "score": round(score, 2)} for doc, score in results]
+
         response_data = {
             "query_text": query_text,
             "response_text": response_text,
             "total_time": total_duration,
             "token_spents": formatted_spents,
-            "prompt": prompt,
+            # "scores": scores_str,
+            "hints": hints,
+            "full_prompt": prompt,
             "prompt_time": prompt_duration,
             "llm_time": response_duration
         }
@@ -95,7 +102,8 @@ class QueryData:
                               total_duration,
                               response_text,
                               prompt_tokens,
-                              response_tokens)
+                              response_tokens,
+                              scores_str)
 
         return response_data
 

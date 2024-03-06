@@ -32,6 +32,7 @@ class DatabaseManager:
                 token_spents INT,
                 query_text TEXT,
                 response_text TEXT,
+                scores TEXT,
                 promt TEXT,
                 prompt_time FLOAT,
                 response_time FLOAT,
@@ -44,14 +45,14 @@ class DatabaseManager:
         print('Таблица создана')
         cursor.close()
 
-    def insert_log(self, query_text, query_hash, prompt_time, response_time, total_time, response_text, token_spents, promt):
+    def insert_log(self, query_text, query_hash, prompt_time, response_time, total_time, response_text, token_spents, promt, scores):
         """ Вставляет запись лога в таблицу """
         insert_query = """
-            INSERT INTO query_logs (query_text, query_hash, prompt_time, response_time, total_time, response_text, token_spents, promt)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO query_logs (query_text, query_hash, prompt_time, response_time, total_time, response_text, token_spents, promt, scores)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         cursor = self.conn.cursor()
-        cursor.execute(insert_query, (query_text, query_hash, prompt_time, response_time, total_time, response_text, token_spents, promt))
+        cursor.execute(insert_query, (query_text, query_hash, prompt_time, response_time, total_time, response_text, token_spents, promt, scores))
         self.conn.commit()
         cursor.close()
 

@@ -39,7 +39,8 @@ class Logger:
                     total_duration: float,
                     response_text: str,
                     prompt_tokens: int,
-                    response_tokens: int):
+                    response_tokens: int,
+                    scores: str):
         query_hash = hashlib.sha256(query_text.encode()).hexdigest()[:6]
 
 
@@ -49,6 +50,7 @@ class Logger:
         logging.info('Total request time: %.2f seconds', total_duration)
         logging.info('------- // -------')
         logging.info('Prompt: %s', prompt)
+        logging.info('Score: %s', scores)
         logging.info('------- // -------')
         logging.info('Question: %s [%s]', query_text, query_hash)
         logging.info('Response: %s', response_text)
@@ -61,7 +63,7 @@ class Logger:
 
         # Инициализируем DatabaseManager и вставляем лог
         db = DatabaseManager()
-        db.insert_log(query_text, query_hash, prompt_duration, response_duration, total_duration, response_text, token_spents, prompt)
+        db.insert_log(query_text, query_hash, prompt_duration, response_duration, total_duration, response_text, token_spents, prompt, scores)
 
 # Пример использования
 # logger = Logger()
