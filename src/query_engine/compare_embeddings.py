@@ -4,13 +4,13 @@ from dotenv import load_dotenv, find_dotenv
 import os
 
 load_dotenv(find_dotenv())
-open_ai_key = os.getenv("OPENAI_API_KEY")
-
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+EMB_MODEL = os.getenv("EMB_MODEL", "text-embedding-ada-002")
 
 def main():
     # Get embedding for a word.
     embedding_function = OpenAIEmbeddings(
-        model="text-embedding-ada-002", openai_api_key=open_ai_key
+        model=EMB_MODEL, openai_api_key=OPENAI_API_KEY
     )
     vector = embedding_function.embed_query("apple")
     print(f"Vector for 'apple': {vector}")

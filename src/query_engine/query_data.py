@@ -1,17 +1,17 @@
 import os
 import time
 import asyncio
-from typing import Tuple, List, Dict
+
+# from typing import  List, Dict
 
 from dotenv import load_dotenv, find_dotenv
 from langchain.prompts import ChatPromptTemplate
-from trulens_eval import TruCustomApp
+# from trulens_eval import TruCustomApp
 from langchain.vectorstores.chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from src.logging import Logger
 from src.evaluation import TestEngine
-from tiktoken import encoding_for_model
-from trulens_eval.instruments import instrument
+# from trulens_eval.instruments import instrument
 
 load_dotenv(find_dotenv())
 
@@ -88,10 +88,8 @@ class QueryData:
         response_duration = round(response_end_time - prompt_end_time, 2)
         total_duration = round(response_end_time - prompt_start_time, 2)
 
-
-        token_spents, formatted_spents = self.calculate_tokens(prompt, llm_response)
-
-        hints = self.format_hints(contexts, scores)
+        token_spents, formatted_spents = Logger.calculate_tokens(prompt, llm_response)
+        hints = Logger.format_hints(contexts, scores)
 
         response_data = {
             "query_text": query_text,
@@ -100,41 +98,17 @@ class QueryData:
             "token_spents": formatted_spents,
             "hints": hints,
             "prompt_time": prompt_duration,
-            "llm_time": response_duration
+            "llm_time": response_duration,
         }
 
-        asyncio.create_task(self.log_query_info(prompt, response_data, str(scores)))
-
+        asyncio.create_task(self.log_query_info(prompt, response_data, str(scores), token_spents))
         return response_data
 
 
 
-    def calculate_tokens(self, prompt_text: str, response_text: str) -> Tuple[int, str]:
-        encoding = encoding_for_model(MODEL_NAME)
-        prompt_tokens = len(encoding.encode(prompt_text))
-        response_tokens = len(encoding.encode(response_text))
-        token_spents = prompt_tokens + response_tokens
-        formatted_spents = f'{token_spents} [{prompt_tokens}, {response_tokens}]'
-        return token_spents, formatted_spents
-
-    def format_hints(self, contexts: list, scores: list) -> List[Dict]:
-        return [{"document": context, "score": round(score, 2)} for context, score in zip(contexts, scores)]
-
-
-    async def log_query_info(self, prompt: str, response_data: dict, scores: str) -> None:
+    async def log_query_info(self, prompt: str, response_data: dict, scores: str, token_spents: int) -> None:
         Logger.log_query_info(response_data['query_text'], prompt, response_data["prompt_time"], response_data["llm_time"],
-                            response_data["total_time"], response_data["response_text"], response_data["token_spents"], scores)
-
-    # async def log_query_info(self, query_text: str, context: str, response_data: dict):
-    #     # Преобразование числовых значений в строки
-    #     prompt_time_str = str(response_data["prompt_time"])
-    #     llm_time_str = str(response_data["llm_time"])
-    #     total_time_str = str(response_data["total_time"])
-    #     token_spents_str = str(response_data["token_spents"])
-
-    #     # Вызов функции логирования с преобразованными значениями
-    #     Logger.log_query_info(query_text, context, prompt_time_str, llm_time_str, total_time_str, response_data["response_text"], token_spents_str)
-
+                            response_data["total_time"], response_data["response_text"],token_spents, response_data["token_spents"], scores)
 
 
 
