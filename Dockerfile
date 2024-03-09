@@ -30,6 +30,7 @@ COPY data/logs app/data/logs
 
 # Inform Docker that the container is listening on the specified port at runtime.
 EXPOSE 7007
+EXPOSE 8501
 
 # Run query_data.py when the container launches
 

@@ -1,5 +1,5 @@
 from src.services import UvicornService
-from src.logging import Logger
+from src.utils.logging import Logger
 # from src.logging import DatabaseManager
 
 def run_uvicorn_service():

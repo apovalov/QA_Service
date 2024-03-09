@@ -2,15 +2,14 @@ import os
 import time
 import asyncio
 
-# from typing import  List, Dict
 
 from dotenv import load_dotenv, find_dotenv
 from langchain.prompts import ChatPromptTemplate
 # from trulens_eval import TruCustomApp
 from langchain.vectorstores.chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-from src.logging import Logger
-from src.evaluation import TestEngine
+from src.utils.logging import Logger
+from src.utils.evaluation import TestEngine
 # from trulens_eval.instruments import instrument
 
 load_dotenv(find_dotenv())

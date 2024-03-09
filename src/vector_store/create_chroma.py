@@ -10,12 +10,13 @@ import os
 
 
 load_dotenv(find_dotenv())
-open_ai_key = os.getenv("OPENAI_API_KEY")
-app_folder = os.getenv("APP_FOLDER", "")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+APP_FOLDER = os.getenv("APP_FOLDER", "")
+EMB_MODEL = os.getenv("EMB_MODEL", "text-embedding-ada-002")
 
 # Путь к файлу лога
-CHROMA_PATH = os.path.join(app_folder, './data/chroma')
-DATA_PATH = os.path.join(app_folder, './data/documents')
+CHROMA_PATH = os.path.join(APP_FOLDER, './data/chroma')
+DATA_PATH = os.path.join(APP_FOLDER, './data/documents')
 
 def main():
     generate_data_store()
@@ -58,7 +59,7 @@ def save_to_chroma(chunks: list[Document]):
     # Create a new DB from the documents.
     db = Chroma.from_documents(
         chunks,
-        OpenAIEmbeddings(model="text-embedding-ada-002", openai_api_key=open_ai_key),
+        OpenAIEmbeddings(model=EMB_MODEL, openai_api_key=OPENAI_API_KEY),
         persist_directory=CHROMA_PATH,
     )
     db.persist()
