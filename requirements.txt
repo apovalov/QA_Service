@@ -7,3 +7,4 @@ uvicorn
 tiktoken
 psycopg2-binary
 trulens_eval
+pinecone
