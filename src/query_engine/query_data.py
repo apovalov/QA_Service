@@ -1,152 +1,140 @@
-from langchain.vectorstores.chroma import Chroma
-from langchain_openai import OpenAIEmbeddings
-from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
-from dotenv import load_dotenv, find_dotenv
 import os
-from typing import Tuple, List
 import time
+import asyncio
+from typing import Tuple, List, Dict
+
+from dotenv import load_dotenv, find_dotenv
+from langchain.prompts import ChatPromptTemplate
+from trulens_eval import TruCustomApp
+from langchain.vectorstores.chroma import Chroma
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from src.logging import Logger
+from src.evaluation import TestEngine
 from tiktoken import encoding_for_model
-
-
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
-from langchain.prompts.chat import HumanMessagePromptTemplate, ChatPromptTemplate
-
-from trulens_eval import TruChain
-
+from trulens_eval.instruments import instrument
 
 load_dotenv(find_dotenv())
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 APP_FOLDER = os.getenv("APP_FOLDER", "")
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
+EMB_MODEL = os.getenv("EMB_MODEL", "text-embedding-ada-002")
 CHROMA_PATH = os.path.join(APP_FOLDER, './data/chroma')
+
+
+PROMPT_TEMPLATE = """
+Answer the question based only on the following context:
+
+{context}
+
+---
+
+Answer the question based on the above context: {question}
+"""
+
 
 class QueryData:
     def __init__(self):
-
-        self.open_ai_key = OPENAI_API_KEY
-        self.chroma_path = CHROMA_PATH
-        self.db = None # Will be initialized in the prepare_prompt method
-
-        self.prompt_template = HumanMessagePromptTemplate(
-            prompt=PromptTemplate(
-                template="Answer the question based only on the following context:\n\n{context}\n\n---\n\nAnswer the question based on the above context: {question}",
-                input_variables=["context", "question"]  # Указываем входные переменные
-            )
-        )
-
-        self.chat_prompt_template = ChatPromptTemplate.from_messages([self.prompt_template])
-
-
+        # self.tests = TestEngine()
+        self.db = None  # Will be initialized in prepare_db
+        self.tru_rag = None
 
     async def prepare_db(self):
         embedding_function = OpenAIEmbeddings(
-            model="text-embedding-ada-002", openai_api_key=self.open_ai_key
+            model=EMB_MODEL, openai_api_key=OPENAI_API_KEY
         )
-        db = Chroma(persist_directory=self.chroma_path, embedding_function=embedding_function)
+        db = Chroma(persist_directory=CHROMA_PATH,
+                    embedding_function=embedding_function)
         return db
 
 
+    async def retrieve_context(self, query: str) -> (list, list):
 
-    async def prepare_prompt(self, query_text: str) -> Tuple[str, List, str, str]:
         if not self.db:
             self.db = await self.prepare_db()
 
-        results = self.db.similarity_search_with_relevance_scores(query_text, k=3)
-        context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-
-        prompt = self.chat_prompt_template.format(context=context_text, question=query_text)
-
-        return prompt, results, context_text, query_text
-
+        results = self.db.similarity_search_with_relevance_scores(query, k=3)
+        if not results or results[0][1] < 0.7:
+           raise Exception(status_code=404, detail="Matching results not found")
+        contextes, scores = zip(*[(doc.page_content, _score) for doc, _score in results])
+        return contextes, scores
 
 
-    # async def get_from_llm(self, prompt: str) -> str:
-    #     model = ChatOpenAI(openai_api_key=self.open_ai_key, model=MODEL_NAME)
-    #     response = model.invoke(prompt)
-    #     response_text = response.content
+    def prepare_promt(self, query: str, contextes: list) -> str:
+        context_text = "\n\n---\n\n".join(contextes)
+        prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+        prompt = prompt_template.format(context=context_text, question=query)
+        return prompt
 
-    #     return response_text
 
-
-    # from langchain.chains import LLMChain
-    # from trulens_eval import TruChain
-
-    async def get_from_llm(self, context: str, question: str) -> str:
-        # Создание модели ChatOpenAI
-        model = ChatOpenAI(openai_api_key=self.open_ai_key, model=MODEL_NAME)
-
-        # Обертывание модели в LLMChain
-        llm_chain = LLMChain(llm=model, prompt=self.chat_prompt_template)
-
-        # Обертывание LLMChain в TruChain
-        tru_chain = TruChain(llm_chain)
-
-        # Использование TruChain как контекстного менеджера
-        # async with tru_chain as recorder:
-        #     # Вызов модели через LLMChain
-        #     response = await llm_chain.acall({"input": prompt})
-
-        with tru_chain as recording:
-            response = llm_chain.invoke({'context':context, 'question': question})
-
-        # print(response)
-
-        response_text = response['text']
-
-        # Получение записи вызова, если это необходимо
-        # record = recorder.get()
-
+    async def llm_query(self, prompt: str) -> str:
+        model = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model=MODEL_NAME)
+        response_text = model.invoke(prompt)
+        response_text = response_text.content
         return response_text
 
 
 
-    async def get_response(self, query_text: str) -> dict:
+    async def take_answer(self, query_text: str) -> dict:
         prompt_start_time = time.perf_counter()
-        prompt, results, context, question = await self.prepare_prompt(query_text)
+        contexts, scores = await self.retrieve_context(query_text)
+        prompt = self.prepare_promt(query_text, contexts)
         prompt_end_time = time.perf_counter()
-        response_text = await self.get_from_llm(context, question)
+
+        llm_response = await self.llm_query(prompt)
         response_end_time = time.perf_counter()
 
         prompt_duration = round(prompt_end_time - prompt_start_time, 2)
         response_duration = round(response_end_time - prompt_end_time, 2)
         total_duration = round(response_end_time - prompt_start_time, 2)
 
-        # Вычисляем количество затраченных токенов
-        encoding = encoding_for_model(MODEL_NAME)
-        prompt_tokens = len(encoding.encode(prompt))
-        response_tokens = len(encoding.encode(response_text))
-        token_spents = prompt_tokens + response_tokens
-        formatted_spents = '%d [%d, %d]' % (token_spents, prompt_tokens, response_tokens)
 
-        scores_str_list = [str(round(score, 2)) for _, score in results]
-        scores_str = ", ".join(scores_str_list)
+        token_spents, formatted_spents = self.calculate_tokens(prompt, llm_response)
 
-        hints = [{"document": doc.page_content, "score": round(score, 2)} for doc, score in results]
+        hints = self.format_hints(contexts, scores)
 
         response_data = {
             "query_text": query_text,
-            "response_text": response_text,
+            "response_text": llm_response,
             "total_time": total_duration,
             "token_spents": formatted_spents,
-            # "scores": scores_str,
             "hints": hints,
-            "full_prompt": prompt,
             "prompt_time": prompt_duration,
             "llm_time": response_duration
         }
 
-        Logger.log_query_info(query_text, prompt,
-                              prompt_duration,
-                              response_duration,
-                              total_duration,
-                              response_text,
-                              prompt_tokens,
-                              response_tokens,
-                              scores_str)
+        asyncio.create_task(self.log_query_info(prompt, response_data, str(scores)))
 
         return response_data
+
+
+
+    def calculate_tokens(self, prompt_text: str, response_text: str) -> Tuple[int, str]:
+        encoding = encoding_for_model(MODEL_NAME)
+        prompt_tokens = len(encoding.encode(prompt_text))
+        response_tokens = len(encoding.encode(response_text))
+        token_spents = prompt_tokens + response_tokens
+        formatted_spents = f'{token_spents} [{prompt_tokens}, {response_tokens}]'
+        return token_spents, formatted_spents
+
+    def format_hints(self, contexts: list, scores: list) -> List[Dict]:
+        return [{"document": context, "score": round(score, 2)} for context, score in zip(contexts, scores)]
+
+
+    async def log_query_info(self, prompt: str, response_data: dict, scores: str) -> None:
+        Logger.log_query_info(response_data['query_text'], prompt, response_data["prompt_time"], response_data["llm_time"],
+                            response_data["total_time"], response_data["response_text"], response_data["token_spents"], scores)
+
+    # async def log_query_info(self, query_text: str, context: str, response_data: dict):
+    #     # Преобразование числовых значений в строки
+    #     prompt_time_str = str(response_data["prompt_time"])
+    #     llm_time_str = str(response_data["llm_time"])
+    #     total_time_str = str(response_data["total_time"])
+    #     token_spents_str = str(response_data["token_spents"])
+
+    #     # Вызов функции логирования с преобразованными значениями
+    #     Logger.log_query_info(query_text, context, prompt_time_str, llm_time_str, total_time_str, response_data["response_text"], token_spents_str)
+
+
+
 

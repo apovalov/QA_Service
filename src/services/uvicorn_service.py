@@ -14,7 +14,7 @@ class UvicornService:
 
     async def make_query(self, query_text: str) -> dict:
         # Prepare the DB.
-        response = await self.query_engine.get_response(query_text)
+        response = await self.query_engine.take_answer(query_text)
 
         # Log data
         return response
