@@ -33,7 +33,11 @@ class DatabaseManager:
                 query_text TEXT,
                 response_text TEXT,
                 scores TEXT,
-                promt TEXT,
+                qa_relevance FLOAT,
+                context_relevance FLOAT,
+                groundedness FLOAT,
+                rag_config TEXT,
+                prompt TEXT,
                 prompt_time FLOAT,
                 response_time FLOAT,
                 query_hash TEXT
@@ -45,16 +49,28 @@ class DatabaseManager:
         print('Таблица создана')
         cursor.close()
 
-    def insert_log(self, query_text, query_hash, prompt_time, response_time, total_time, response_text, token_spents, promt, scores):
+    # def insert_log(self, query_text, query_hash, prompt_time, response_time, total_time, response_text, token_spents, promt, scores):
+    #     """ Вставляет запись лога в таблицу """
+    #     insert_query = """
+    #         INSERT INTO query_logs (query_text, query_hash, prompt_time, response_time, total_time, response_text, token_spents, promt, scores)
+    #         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    #     """
+    #     cursor = self.conn.cursor()
+    #     cursor.execute(insert_query, (query_text, query_hash, prompt_time, response_time, total_time, response_text, token_spents, promt, scores))
+    #     self.conn.commit()
+    #     cursor.close()
+
+    def insert_log(self, total_time, token_spents, query_text, response_text, scores, qa_relevance, context_relevance, groundedness, rag_config, prompt, prompt_time, response_time, query_hash):
         """ Вставляет запись лога в таблицу """
         insert_query = """
-            INSERT INTO query_logs (query_text, query_hash, prompt_time, response_time, total_time, response_text, token_spents, promt, scores)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO query_logs (total_time, token_spents, query_text, response_text, scores, qa_relevance, context_relevance, groundedness, rag_config, prompt, prompt_time, response_time, query_hash)
+            VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         cursor = self.conn.cursor()
-        cursor.execute(insert_query, (query_text, query_hash, prompt_time, response_time, total_time, response_text, token_spents, promt, scores))
+        cursor.execute(insert_query, (total_time, token_spents, query_text, response_text, scores, qa_relevance, context_relevance, groundedness, rag_config, prompt, prompt_time, response_time, query_hash))
         self.conn.commit()
         cursor.close()
+
 
     def __del__(self):
         """ Закрывает соединение с базой данных """

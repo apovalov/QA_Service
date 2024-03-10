@@ -27,6 +27,7 @@ COPY src/ ./src
 COPY start.py ./
 COPY data/chroma app/data/chroma
 COPY data/logs app/data/logs
+COPY data/tests app/data/tests
 
 # Inform Docker that the container is listening on the specified port at runtime.
 EXPOSE 7007

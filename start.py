@@ -1,20 +1,13 @@
 from src.services import UvicornService
 from src.utils.logging import Logger
-# from src.logging import DatabaseManager
+from src.query_engine import  QueryData, QueryDataLC
 
-def run_uvicorn_service():
-    service = UvicornService()
-    service.run()
-
-def run_other_service():
-    pass
 
 def main():
-    _ = Logger()
 
-
-    run_uvicorn_service()
-    # run_other_service()
+    query_engine = QueryData()
+    service = UvicornService(query_engine)
+    service.run()
 
 if __name__ == "__main__":
     main()

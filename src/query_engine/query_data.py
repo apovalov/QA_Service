@@ -2,7 +2,7 @@ import os
 import time
 import asyncio
 
-
+from .abstract_rag import RAG
 from dotenv import load_dotenv, find_dotenv
 from langchain.prompts import ChatPromptTemplate
 # from trulens_eval import TruCustomApp
@@ -32,11 +32,11 @@ Answer the question based on the above context: {question}
 """
 
 
-class QueryData:
+class QueryData(RAG):
     def __init__(self):
         # self.tests = TestEngine()
         self.db = None  # Will be initialized in prepare_db
-        self.tru_rag = None
+        self.logger = Logger()
 
     async def prepare_db(self):
         embedding_function = OpenAIEmbeddings(
@@ -55,7 +55,8 @@ class QueryData:
         results = self.db.similarity_search_with_relevance_scores(query, k=3)
         if not results or results[0][1] < 0.7:
            raise Exception(status_code=404, detail="Matching results not found")
-        contextes, scores = zip(*[(doc.page_content, _score) for doc, _score in results])
+        # contextes, scores = zip(*[(doc.page_content, _score) for doc, _score in results])
+        contextes, scores = zip(*[(doc.page_content, round(_score, 2)) for doc, _score in results])
         return contextes, scores
 
 
@@ -75,6 +76,8 @@ class QueryData:
 
 
     async def take_answer(self, query_text: str) -> dict:
+
+
         prompt_start_time = time.perf_counter()
         contexts, scores = await self.retrieve_context(query_text)
         prompt = self.prepare_promt(query_text, contexts)
@@ -87,8 +90,8 @@ class QueryData:
         response_duration = round(response_end_time - prompt_end_time, 2)
         total_duration = round(response_end_time - prompt_start_time, 2)
 
-        token_spents, formatted_spents = Logger.calculate_tokens(prompt, llm_response)
-        hints = Logger.format_hints(contexts, scores)
+        token_spents, formatted_spents = self.logger.calculate_tokens(prompt, llm_response)
+        hints = self.logger.format_hints(contexts, scores)
 
         response_data = {
             "query_text": query_text,
@@ -98,6 +101,7 @@ class QueryData:
             "hints": hints,
             "prompt_time": prompt_duration,
             "llm_time": response_duration,
+            "rag_config": self.logger.rag_config,
         }
 
         asyncio.create_task(self.log_query_info(prompt, response_data, str(scores), token_spents))
@@ -106,7 +110,7 @@ class QueryData:
 
 
     async def log_query_info(self, prompt: str, response_data: dict, scores: str, token_spents: int) -> None:
-        Logger.log_query_info(response_data['query_text'], prompt, response_data["prompt_time"], response_data["llm_time"],
+        self.logger.log_query_info(response_data['query_text'], prompt, response_data["prompt_time"], response_data["llm_time"],
                             response_data["total_time"], response_data["response_text"],token_spents, response_data["token_spents"], scores)
 
 

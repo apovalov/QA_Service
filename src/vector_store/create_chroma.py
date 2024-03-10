@@ -61,6 +61,7 @@ def save_to_chroma(chunks: list[Document]):
         chunks,
         OpenAIEmbeddings(model=EMB_MODEL, openai_api_key=OPENAI_API_KEY),
         persist_directory=CHROMA_PATH,
+        collection_metadata = {"source": "wikipedia-simple-text-embedding-ada-002-100K"}
     )
     db.persist()
     print(f"Saved {len(chunks)} chunks to {CHROMA_PATH}.")
