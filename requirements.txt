@@ -6,6 +6,8 @@ fastapi
 uvicorn
 tiktoken
 psycopg2-binary
+aiogram==2.15
+# anthropic
 # langchainhub
 # trulens_eval
 # ragas

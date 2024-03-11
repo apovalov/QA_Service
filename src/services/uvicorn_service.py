@@ -1,6 +1,7 @@
 import uvicorn
 from fastapi import FastAPI
 from src.query_engine import QueryData
+from src.utils.logging import Logger
 # from src.utils.evaluation import RagasEval
 
 import os
@@ -38,10 +39,12 @@ class UvicornService:
 
 
     def run(self):
+        Logger().log('Run the bot')
         """Run application"""
         uvicorn.run(self.app, host="0.0.0.0", port=7007)
 
 # Вне класса
 if __name__ == "__main__":
+    Logger().log('Starting the bot as __main__ )')
     service = UvicornService()
     service.run()

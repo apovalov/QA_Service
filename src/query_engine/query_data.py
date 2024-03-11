@@ -9,6 +9,8 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.vectorstores.chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from src.utils.logging import Logger
+# import anthropic
+
 # from src.utils.evaluation import TestEngine
 # from trulens_eval.instruments import instrument
 
@@ -70,8 +72,24 @@ class QueryData:
     async def llm_query(self, prompt: str) -> str:
         model = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model=MODEL_NAME)
         response_text = model.invoke(prompt)
+
+
+        client = anthropic.Anthropic()
+    #  # Create the message to send to the API
+    #     message = client.messages.create(
+    #         model="claude-2.1"#"claude-3-opus-20240229",
+    #         max_tokens=1000,
+    #         temperature=0.0,
+    #         system="Answer the question based only on the following context",
+    #         messages=[
+    #             {"role": "user", "content": prompt}
+    #         ]
+    #     )
+
+    #     # Assuming the API returns a response object with a content attribute
+    #     response_text = message.content
         response_text = response_text.content
-        return response_text
+        return str(response_text)
 
 
 
@@ -102,7 +120,8 @@ class QueryData:
             "prompt_time": prompt_duration,
             "llm_time": response_duration,
             "rag_config": self.logger.rag_config,
-            "contexts" : contexts
+            "contexts" : contexts,
+            'scores': str(scores),
         }
 
         asyncio.create_task(self.log_query_info(prompt, response_data, str(scores), token_spents))
