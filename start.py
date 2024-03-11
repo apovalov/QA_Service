@@ -1,6 +1,5 @@
 from src.services import UvicornService
-from src.utils.logging import Logger
-from src.query_engine import  QueryData, QueryDataLC
+from src.query_engine import QueryData
 
 
 def main():

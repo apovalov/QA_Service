@@ -12,6 +12,9 @@ load_dotenv(find_dotenv())
 APP_FOLDER = os.getenv("APP_FOLDER", "")
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
 EMB_MODEL = os.getenv("EMB_MODEL", "text-embedding-ada-002")
+CHUNK_SIZE = os.getenv("CHUNK_SIZE", 500)
+CHUNK_OVERLAP = os.getenv("CHUNK_OVERLAP", 100)
+
 
 def singleton(class_):
     instances = {}
@@ -30,9 +33,9 @@ class Logger:
         'emb_model': EMB_MODEL,
         'llm_model': MODEL_NAME,
         'rag_type': "QueryData",
-        'chunk_type': "RecursiveCharacterTextSplitter",
-        'chunk_size': "300",
-        'chunk_overlap': "100",
+        'chunk_type': "SentenceTransformersTokenTextSplitter",
+        'chunk_size': CHUNK_SIZE,
+        'chunk_overlap': CHUNK_OVERLAP,
         }
 
     def __init__(self):

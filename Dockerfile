@@ -23,7 +23,9 @@ RUN python -m pip install --upgrade pip && pip install -r requirements.txt
 
 # Copy the rest of your application's source code from your host to your image filesystem.
 
+COPY .env ./
 COPY src/ ./src
+
 COPY start.py ./
 COPY data/chroma app/data/chroma
 COPY data/logs app/data/logs

@@ -2,14 +2,14 @@ import os
 import time
 import asyncio
 
-from .abstract_rag import RAG
+# from .abstract_rag import RAG
 from dotenv import load_dotenv, find_dotenv
 from langchain.prompts import ChatPromptTemplate
 # from trulens_eval import TruCustomApp
 from langchain.vectorstores.chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from src.utils.logging import Logger
-from src.utils.evaluation import TestEngine
+# from src.utils.evaluation import TestEngine
 # from trulens_eval.instruments import instrument
 
 load_dotenv(find_dotenv())
@@ -32,7 +32,7 @@ Answer the question based on the above context: {question}
 """
 
 
-class QueryData(RAG):
+class QueryData:
     def __init__(self):
         # self.tests = TestEngine()
         self.db = None  # Will be initialized in prepare_db
@@ -53,8 +53,8 @@ class QueryData(RAG):
             self.db = await self.prepare_db()
 
         results = self.db.similarity_search_with_relevance_scores(query, k=3)
-        if not results or results[0][1] < 0.7:
-           raise Exception(status_code=404, detail="Matching results not found")
+        # if not results or results[0][1] < 0.4:
+        #    raise Exception(status_code=404, detail="Matching results not found")
         # contextes, scores = zip(*[(doc.page_content, _score) for doc, _score in results])
         contextes, scores = zip(*[(doc.page_content, round(_score, 2)) for doc, _score in results])
         return contextes, scores
@@ -102,6 +102,7 @@ class QueryData(RAG):
             "prompt_time": prompt_duration,
             "llm_time": response_duration,
             "rag_config": self.logger.rag_config,
+            "contexts" : contexts
         }
 
         asyncio.create_task(self.log_query_info(prompt, response_data, str(scores), token_spents))
