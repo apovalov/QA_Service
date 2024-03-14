@@ -1,6 +1,7 @@
 # QA_Service
 
 QAService is a template for deploying a QA system using RAG technology on a remote server.
+https://www.google.com/url?sa=i&url=https%3A%2F%2Fblogs.nvidia.com%2Fblog%2Fwhat-is-retrieval-augmented-generation%2F&psig=AOvVaw1Evq2f-XIJKilOCxL2G-FB&ust=1710481546848000&source=images&cd=vfe&opi=89978449&ved=0CBMQjRxqFwoTCPDP6rmG84QDFQAAAAAdAAAAABAJ![Uploading image.png…]()
 
 
 To deploy the service you need to have Docker compose installed:
