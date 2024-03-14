@@ -2,7 +2,7 @@
 
 QAService is a template for deploying a QA system using RAG technology on a remote server.
 
-![Retrieval-Augmented-Generation-RAG-KV-1](https://github.com/apovalov/QA_Service/assets/43651275/9f6497fa-f909-436c-8f14-f1a96d5ee6c1)
+![Retrieval-Augmented-Generation-RAG-KV-1|500](https://github.com/apovalov/QA_Service/assets/43651275/9f6497fa-f909-436c-8f14-f1a96d5ee6c1)
 
 To deploy the service you need to have Docker compose installed:
 
